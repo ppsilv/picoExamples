@@ -1,0 +1,62 @@
+.pio_version 0      // O valor zero indica que pode ser usado quaisquer hardware raspberry pi pico pois zero é o menor hardware
+
+.program hello      // Nome do programa
+
+.define SIZE    8   // Define o tamanho do dado a ser escrito na saida, em minhas pesquisas não achei menção a um registrador
+                    // portanto 
+
+/*
+    Lê repetidamente dados do tamanho igual a SIZE em TX FIFO, até que o TX FIFO esteja vazio
+    Os bits são lidos a partir do bit menos significativo.
+*/
+
+loop:
+    pull
+    out pins, SIZE
+    jmp loop
+
+% c-sdk {
+/*
+    Esta função inicializa a PIO.
+    O nome dessa função tem que obrigatóriamente iniciar com o nome do programa + underscore,
+    nesse caso como o programa chama-se hello tem-se que acrescentar o prefixo hello_ ao nome da
+    função ficando hello_program_init(...).
+*/
+static inline void hello_program_init(PIO pio, uint sm, uint offset, uint pin) 
+{
+    // Busca a configuration padrão da máquina de estado(state machine)
+    pio_sm_config c = hello_program_get_default_config(offset);
+
+    // Map the state machine's OUT pin group to one pin, namely the `pin`
+    // parameter to this function.
+    // Mapeia (o)s pino(s), no caso de mais de um pino mapear o primeiro. 
+    sm_config_set_out_pins(&c, pin, 8);
+
+    // Set this pin's GPIO function (connect PIO to the pad)
+    // Inicializa o(s) pino(s) 
+    pio_gpio_init(pio, pin);
+    pio_gpio_init(pio, pin+1);
+    pio_gpio_init(pio, pin+2);
+    pio_gpio_init(pio, pin+3);
+    pio_gpio_init(pio, pin+4);
+    pio_gpio_init(pio, pin+5);
+    pio_gpio_init(pio, pin+6);
+    pio_gpio_init(pio, pin+7);
+
+    // Configura a direção do(s) pino(s) se input(=false) ou output(=true)
+    pio_sm_set_consecutive_pindirs(pio, sm, pin, 1, true);
+    pio_sm_set_consecutive_pindirs(pio, sm, pin+1, 1, true);
+    pio_sm_set_consecutive_pindirs(pio, sm, pin+2, 1, true);
+    pio_sm_set_consecutive_pindirs(pio, sm, pin+3, 1, true);
+    pio_sm_set_consecutive_pindirs(pio, sm, pin+4, 1, true);
+    pio_sm_set_consecutive_pindirs(pio, sm, pin+5, 1, true);
+    pio_sm_set_consecutive_pindirs(pio, sm, pin+6, 1, true);
+    pio_sm_set_consecutive_pindirs(pio, sm, pin+7, 1, true);
+
+    // Carrega a configuração e pula para o inicio do programa.
+    pio_sm_init(pio, sm, offset, &c);
+
+    // Habilita o estado da state machi como "running".
+    pio_sm_set_enabled(pio, sm, true);
+}
+%}
